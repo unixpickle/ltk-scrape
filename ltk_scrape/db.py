@@ -1,6 +1,8 @@
+import random
 import sqlite3
+import time
 from dataclasses import asdict, dataclass
-from typing import List, Literal, Optional, Tuple
+from typing import Callable, List, Literal, Optional, Tuple
 
 ImageSource = Literal["product", "ltk"]
 
@@ -54,11 +56,27 @@ class LTK:
     fetched_at: int
 
 
+def retry_if_busy(fn: Callable) -> Callable:
+    def new_fn(*args, **kwargs):
+        while True:
+            try:
+                return fn(*args, **kwargs)
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e):
+                    print("DB was busy...")
+                    time.sleep(random.random())
+                else:
+                    raise
+
+    return new_fn
+
+
 class DB:
     def __init__(self, filename: str):
         self.connection = sqlite3.connect(filename)
         self._initialize_tables()
 
+    @retry_if_busy
     def _initialize_tables(self):
         self.connection.execute(
             """
@@ -135,6 +153,7 @@ class DB:
         )
         self.connection.commit()
 
+    @retry_if_busy
     def upsert_products(self, products: List[Product]):
         cursor = self.connection.cursor()
         for product in products:
@@ -198,6 +217,7 @@ class DB:
             )
         self.connection.commit()
 
+    @retry_if_busy
     def upsert_ltks(self, ltks: List[LTK]):
         cursor = self.connection.cursor()
         for ltk in ltks:
@@ -237,6 +257,7 @@ class DB:
             )
         self.connection.commit()
 
+    @retry_if_busy
     def has_visited_ltk(self, id: str) -> Tuple[bool, Optional[str]]:
         cursor = self.connection.cursor()
         cursor.execute("SELECT error FROM visited_ltks WHERE id = ?", (id,))
@@ -245,6 +266,7 @@ class DB:
             return True, result[0]  # Visited, return error if present
         return False, None  # Not visited
 
+    @retry_if_busy
     def mark_visited_ltk(self, id: str, error: Optional[str]):
         cursor = self.connection.cursor()
         cursor.execute(
@@ -258,6 +280,7 @@ class DB:
         )
         self.connection.commit()
 
+    @retry_if_busy
     def unvisited_ltks(self, limit: int) -> List[Tuple[str, str]]:
         query = """
         SELECT ltks.id, ltks.share_url
@@ -269,6 +292,7 @@ class DB:
         result = self.connection.execute(query, (limit,)).fetchall()
         return [tuple(x) for x in result]
 
+    @retry_if_busy
     def missing_images(self, source: ImageSource, limit: int) -> List[Tuple[str, str]]:
         """Get a collection of (id, url) tuples."""
 
@@ -286,6 +310,7 @@ class DB:
         result = self.connection.execute(query, (limit,)).fetchall()
         return [tuple(x) for x in result]
 
+    @retry_if_busy
     def insert_image(
         self,
         source: ImageSource,
@@ -296,6 +321,7 @@ class DB:
         table = "product_images" if source == "product" else "ltk_hero_images"
         cursor = self.connection.cursor()
         cursor.execute(
-            f"INSERT INTO {table} (id, data, error) VALUES (?, ?, ?)", (id, blob, error)
+            f"INSERT OR REPLACE INTO {table} (id, data, error) VALUES (?, ?, ?)",
+            (id, blob, error),
         )
         self.connection.commit()
