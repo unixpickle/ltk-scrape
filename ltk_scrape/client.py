@@ -41,6 +41,10 @@ class LTKClient:
         products_json = self.driver.execute_script(script)
         products_data = json.loads(products_json)
 
+        script = "return JSON.stringify(__NUXT__.state['media-objects'].mediaObjects);"
+        media_objects_json = self.driver.execute_script(script)
+        media_objects = json.loads(media_objects_json)
+
         script = (
             "return JSON.stringify(__NUXT__.state['product-details'].productDetails);"
         )
@@ -53,6 +57,9 @@ class LTKClient:
                 hero_image=data["heroImage"],
                 hero_image_width=data["heroImageWidth"],
                 hero_image_height=data["heroImageHeight"],
+                video_url=media_objects.get(data.get("videoMediaId"), {}).get(
+                    "mediaCdnUrl"
+                ),
                 profile_id=data["profileId"],
                 profile_user_id=data["profileUserId"],
                 status=data["status"],

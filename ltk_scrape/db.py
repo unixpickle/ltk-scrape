@@ -41,6 +41,7 @@ class LTK:
     hero_image: str
     hero_image_width: int
     hero_image_height: int
+    video_url: str
     profile_id: str
     profile_user_id: str
     status: str
@@ -66,6 +67,7 @@ class DB:
                 hero_image TEXT,
                 hero_image_width INTEGER,
                 hero_image_height INTEGER,
+                video_url TEXT,
                 profile_id TEXT,
                 profile_user_id TEXT,
                 status TEXT,
@@ -206,12 +208,12 @@ class DB:
             cursor.execute(
                 """
                 INSERT INTO ltks (
-                    id, hero_image, hero_image_width, hero_image_height, profile_id,
+                    id, hero_image, hero_image_width, hero_image_height, video_url, profile_id,
                     profile_user_id, status, caption, share_url, date_created,
                     date_updated, date_published, product_ids, fetched_at
                 )
                 VALUES (
-                    :id, :hero_image, :hero_image_width, :hero_image_height, :profile_id,
+                    :id, :hero_image, :hero_image_width, :hero_image_height, :video_url, :profile_id,
                     :profile_user_id, :status, :caption, :share_url, :date_created,
                     :date_updated, :date_published, :product_ids, :fetched_at
                 )
@@ -219,6 +221,7 @@ class DB:
                     hero_image = excluded.hero_image,
                     hero_image_width = excluded.hero_image_width,
                     hero_image_height = excluded.hero_image_height,
+                    video_url = excluded.video_url,
                     profile_id = excluded.profile_id,
                     profile_user_id = excluded.profile_user_id,
                     status = excluded.status,
