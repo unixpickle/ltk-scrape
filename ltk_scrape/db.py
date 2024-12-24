@@ -1,6 +1,8 @@
 import sqlite3
 from dataclasses import asdict, dataclass
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
+
+ImageSource = Literal["product", "ltk"]
 
 
 @dataclass
@@ -107,6 +109,24 @@ class DB:
             """
             CREATE TABLE IF NOT EXISTS visited_ltks (
                 id TEXT PRIMARY KEY,
+                error TEXT
+            );
+            """
+        )
+        self.connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS product_images (
+                id TEXT PRIMARY KEY,
+                data BLOB,
+                error TEXT
+            );
+            """
+        )
+        self.connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ltk_hero_images (
+                id TEXT PRIMARY KEY,
+                data BLOB,
                 error TEXT
             );
             """
@@ -245,3 +265,34 @@ class DB:
         """
         result = self.connection.execute(query, (limit,)).fetchall()
         return [tuple(x) for x in result]
+
+    def missing_images(self, source: ImageSource, limit: int) -> List[Tuple[str, str]]:
+        """Get a collection of (id, url) tuples."""
+
+        image_table = "product_images" if source == "product" else "ltk_hero_images"
+        listing_table = "products" if source == "product" else "ltks"
+        url_field = "image_url" if source == "product" else "hero_image"
+
+        query = f"""
+        SELECT {listing_table}.id, {listing_table}.{url_field}
+        FROM {listing_table}
+        LEFT JOIN {image_table} ON {image_table}.id = {listing_table}.id
+        WHERE {image_table}.id IS NULL
+        LIMIT ?;
+        """
+        result = self.connection.execute(query, (limit,)).fetchall()
+        return [tuple(x) for x in result]
+
+    def insert_image(
+        self,
+        source: ImageSource,
+        id: str,
+        blob: Optional[bytes],
+        error: Optional[str] = None,
+    ):
+        table = "product_images" if source == "product" else "ltk_hero_images"
+        cursor = self.connection.cursor()
+        cursor.execute(
+            f"INSERT INTO {table} (id, data, error) VALUES (?, ?, ?)", (id, blob, error)
+        )
+        self.connection.commit()
