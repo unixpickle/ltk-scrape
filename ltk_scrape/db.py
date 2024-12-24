@@ -184,14 +184,18 @@ class DB:
                     obj[key] = None
             cursor.execute(
                 """
-                INSERT OR REPLACE INTO products (id, ltk_id, hyperlink, image_url, retailer_display_name, fetched_at,
-                                      details_id, name, advertiser_name, advertiser_parent_id, price,
-                                      local_price, currency, retailer_id, retailer_ids, min_price,
-                                      min_sale_price, max_price, max_sale_price, top_level_category)
-                VALUES (:id, :ltk_id, :hyperlink, :image_url, :retailer_display_name, :fetched_at,
-                        :details_id, :name, :advertiser_name, :advertiser_parent_id, :price,
-                        :local_price, :currency, :retailer_id, :retailer_ids, :min_price,
-                        :min_sale_price, :max_price, :max_sale_price, :top_level_category);
+                INSERT OR REPLACE INTO products (
+                    id, ltk_id, hyperlink, image_url, retailer_display_name, fetched_at,
+                    details_id, name, advertiser_name, advertiser_parent_id, price,
+                    local_price, currency, retailer_id, retailer_ids, min_price,
+                    min_sale_price, max_price, max_sale_price, top_level_category
+                )
+                VALUES (
+                    :id, :ltk_id, :hyperlink, :image_url, :retailer_display_name, :fetched_at,
+                    :details_id, :name, :advertiser_name, :advertiser_parent_id, :price,
+                    :local_price, :currency, :retailer_id, :retailer_ids, :min_price,
+                    :min_sale_price, :max_price, :max_sale_price, :top_level_category
+                );
                 """,
                 obj,
             )
