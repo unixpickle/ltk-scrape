@@ -4,7 +4,6 @@ import io
 import requests
 from PIL import Image
 
-from .client import LTKClient
 from .db import DB
 
 
