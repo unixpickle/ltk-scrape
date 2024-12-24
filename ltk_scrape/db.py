@@ -1,3 +1,4 @@
+import json
 import random
 import sqlite3
 import time
@@ -183,35 +184,14 @@ class DB:
                     obj[key] = None
             cursor.execute(
                 """
-                INSERT INTO products (id, ltk_id, hyperlink, image_url, retailer_display_name, fetched_at,
+                INSERT OR REPLACE INTO products (id, ltk_id, hyperlink, image_url, retailer_display_name, fetched_at,
                                       details_id, name, advertiser_name, advertiser_parent_id, price,
                                       local_price, currency, retailer_id, retailer_ids, min_price,
                                       min_sale_price, max_price, max_sale_price, top_level_category)
                 VALUES (:id, :ltk_id, :hyperlink, :image_url, :retailer_display_name, :fetched_at,
                         :details_id, :name, :advertiser_name, :advertiser_parent_id, :price,
                         :local_price, :currency, :retailer_id, :retailer_ids, :min_price,
-                        :min_sale_price, :max_price, :max_sale_price, :top_level_category)
-                ON CONFLICT(id) DO UPDATE SET
-                    ltk_id = excluded.ltk_id,
-                    hyperlink = excluded.hyperlink,
-                    image_url = excluded.image_url,
-                    retailer_display_name = excluded.retailer_display_name,
-                    fetched_at = excluded.fetched_at,
-                    details_id = excluded.details_id,
-                    name = excluded.name,
-                    advertiser_name = excluded.advertiser_name,
-                    advertiser_parent_id = excluded.advertiser_parent_id,
-                    price = excluded.price,
-                    local_price = excluded.local_price,
-                    currency = excluded.currency,
-                    retailer_id = excluded.retailer_id,
-                    retailer_ids = excluded.retailer_ids,
-                    min_price = excluded.min_price,
-                    min_sale_price = excluded.min_sale_price,
-                    max_price = excluded.max_price,
-                    max_sale_price = excluded.max_sale_price,
-                    top_level_category = excluded.top_level_category
-                    ;
+                        :min_sale_price, :max_price, :max_sale_price, :top_level_category);
                 """,
                 obj,
             )
@@ -227,7 +207,7 @@ class DB:
 
             cursor.execute(
                 """
-                INSERT INTO ltks (
+                INSERT OR REPLACE INTO ltks (
                     id, hero_image, hero_image_width, hero_image_height, video_url, profile_id,
                     profile_user_id, status, caption, share_url, date_created,
                     date_updated, date_published, product_ids, fetched_at
@@ -237,25 +217,82 @@ class DB:
                     :profile_user_id, :status, :caption, :share_url, :date_created,
                     :date_updated, :date_published, :product_ids, :fetched_at
                 )
-                ON CONFLICT(id) DO UPDATE SET
-                    hero_image = excluded.hero_image,
-                    hero_image_width = excluded.hero_image_width,
-                    hero_image_height = excluded.hero_image_height,
-                    video_url = excluded.video_url,
-                    profile_id = excluded.profile_id,
-                    profile_user_id = excluded.profile_user_id,
-                    status = excluded.status,
-                    caption = excluded.caption,
-                    share_url = excluded.share_url,
-                    date_created = excluded.date_created,
-                    date_updated = excluded.date_updated,
-                    date_published = excluded.date_published,
-                    product_ids = excluded.product_ids,
-                    fetched_at = excluded.fetched_at;
                 """,
                 ltk_data,
             )
         self.connection.commit()
+
+    @retry_if_busy
+    def get_products(self, ids: List[str]) -> List[Product]:
+        cursor = self.connection.cursor()
+        query = f"""
+        SELECT id, ltk_id, hyperlink, image_url, retailer_display_name, fetched_at, 
+            details_id, name, advertiser_name, advertiser_parent_id, price, 
+            local_price, currency, retailer_id, retailer_ids, min_price, 
+            min_sale_price, max_price, max_sale_price, top_level_category
+        FROM products
+        WHERE id IN ({','.join('?' for _ in ids)})
+        """
+        cursor.execute(query, ids)
+        rows = cursor.fetchall()
+
+        products = []
+        for row in rows:
+            (
+                id,
+                ltk_id,
+                hyperlink,
+                image_url,
+                retailer_display_name,
+                fetched_at,
+                details_id,
+                name,
+                advertiser_name,
+                advertiser_parent_id,
+                price,
+                local_price,
+                currency,
+                retailer_id,
+                retailer_ids,
+                min_price,
+                min_sale_price,
+                max_price,
+                max_sale_price,
+                top_level_category,
+            ) = row
+
+            details = None
+            if details_id:
+                details = ProductDetails(
+                    id=details_id,
+                    name=name,
+                    advertiser_name=advertiser_name,
+                    advertiser_parent_id=advertiser_parent_id,
+                    price=price,
+                    local_price=local_price,
+                    currency=currency,
+                    retailer_id=retailer_id,
+                    retailer_ids=json.loads(retailer_ids) if retailer_ids else [],
+                    min_price=min_price,
+                    min_sale_price=min_sale_price,
+                    max_price=max_price,
+                    max_sale_price=max_sale_price,
+                    top_level_category=top_level_category,
+                )
+
+            product = Product(
+                id=id,
+                ltk_id=ltk_id,
+                hyperlink=hyperlink,
+                image_url=image_url,
+                retailer_display_name=retailer_display_name,
+                retailer_id=retailer_id,
+                fetched_at=fetched_at,
+                details=details,
+            )
+            products.append(product)
+
+        return products
 
     @retry_if_busy
     def has_visited_ltk(self, id: str) -> Tuple[bool, Optional[str]]:
@@ -271,10 +308,8 @@ class DB:
         cursor = self.connection.cursor()
         cursor.execute(
             """
-            INSERT INTO visited_ltks (id, error)
+            INSERT OR REPLACE INTO visited_ltks (id, error)
             VALUES (?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                error = excluded.error;
             """,
             (id, error),
         )
@@ -293,18 +328,25 @@ class DB:
         return [tuple(x) for x in result]
 
     @retry_if_busy
-    def missing_images(self, source: ImageSource, limit: int) -> List[Tuple[str, str]]:
+    def missing_images(
+        self, source: ImageSource, limit: int, only_with_price: bool = False
+    ) -> List[Tuple[str, str]]:
         """Get a collection of (id, url) tuples."""
 
         image_table = "product_images" if source == "product" else "ltk_hero_images"
         listing_table = "products" if source == "product" else "ltks"
         url_field = "image_url" if source == "product" else "hero_image"
+        where_clause = (
+            "{listing_table}.price is not null"
+            if source == "product" and only_with_price
+            else ""
+        )
 
         query = f"""
         SELECT {listing_table}.id, {listing_table}.{url_field}
         FROM {listing_table}
         LEFT JOIN {image_table} ON {image_table}.id = {listing_table}.id
-        WHERE {image_table}.id IS NULL
+        WHERE {image_table}.id IS NULL {where_clause}
         LIMIT ?;
         """
         result = self.connection.execute(query, (limit,)).fetchall()

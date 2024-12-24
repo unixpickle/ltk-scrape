@@ -13,13 +13,16 @@ def main():
     parser.add_argument(
         "--image_type", type=str, default="product", help="'product' or 'ltk'"
     )
+    parser.add_argument("--only_with_price", action="store_true")
     args = parser.parse_args()
 
     db = DB(args.db_path)
 
     with requests.Session() as sess:
         while True:
-            unvisited = db.missing_images(args.image_type, 50)
+            unvisited = db.missing_images(
+                args.image_type, 50, only_with_price=args.only_with_price
+            )
             if not len(unvisited):
                 print("no more remaining images to download")
                 break
