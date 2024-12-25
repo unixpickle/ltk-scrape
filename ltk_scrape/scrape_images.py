@@ -29,7 +29,7 @@ def main():
             for id, url in unvisited:
                 print(f"fetching: {id} ...")
                 try:
-                    result_image = sess.get(url, stream=True).content
+                    result_image = sess.get(url, stream=True timeout=5).content
                     # Make sure the image is actually valid.
                     Image.open(io.BytesIO(result_image)).load()
                 except KeyboardInterrupt:
