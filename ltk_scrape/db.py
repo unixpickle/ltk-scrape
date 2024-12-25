@@ -384,7 +384,7 @@ class DB:
     @retry_if_busy
     def missing_usernames(self, limit: int) -> List[Tuple[str, str]]:
         query = """
-        SELECT ltks.profile_user_id, min(ltks.share_url)
+        SELECT ltks.profile_user_id, max(ltks.share_url)
         FROM ltks
         LEFT JOIN usernames ON usernames.id = ltks.profile_user_id
         WHERE usernames.username IS NULL and usernames.error IS NULL
