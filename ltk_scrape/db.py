@@ -341,7 +341,7 @@ class DB:
         listing_table = "products" if source == "product" else "ltks"
         url_field = "image_url" if source == "product" else "hero_image"
         where_clause = (
-            "{listing_table}.price is not null"
+            f"AND {listing_table}.price is not null"
             if source == "product" and only_with_price
             else ""
         )
