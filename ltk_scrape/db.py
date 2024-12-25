@@ -102,6 +102,15 @@ class DB:
         )
         self.connection.execute(
             """
+            CREATE TABLE IF NOT EXISTS usernames (
+                id TEXT PRIMARY KEY,
+                username TEXT,
+                error TEXT
+            );
+            """
+        )
+        self.connection.execute(
+            """
             CREATE TABLE IF NOT EXISTS products (
                 id TEXT PRIMARY KEY,
                 ltk_id TEXT,
@@ -370,4 +379,29 @@ class DB:
             f"INSERT OR REPLACE INTO {table} (id, data, error) VALUES (?, ?, ?)",
             (id, blob, error),
         )
+        self.connection.commit()
+
+    @retry_if_busy
+    def missing_usernames(self, limit: int) -> List[Tuple[str, str]]:
+        query = """
+        SELECT ltks.profile_user_id, min(ltks.share_url)
+        FROM ltks
+        LEFT JOIN usernames ON usernames.id = ltks.profile_user_id
+        WHERE usernames.username IS NULL and usernames.error IS NULL
+        GROUP BY ltks.profile_user_id
+        LIMIT ?;
+        """
+        result = self.connection.execute(query, (limit,)).fetchall()
+        return [tuple(x) for x in result]
+
+    @retry_if_busy
+    def insert_username(
+        self, id: int, username: Optional[str], error: Optional[str] = None
+    ):
+        query = """
+        INSERT OR REPLACE INTO usernames (id, username, error)
+        VALUES (?, ?, ?);
+        """
+        cursor = self.connection.cursor()
+        cursor.execute(query, (id, username, error)).fetchall()
         self.connection.commit()
