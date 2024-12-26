@@ -161,11 +161,21 @@ class DB:
             );
             """
         )
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_error_null ON product_images (error);")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_ltks_id_hero_image ON ltks(id, hero_image);")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_products_image_url ON products(id, image_url);")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_products_image_url_price ON products(id, price, image_url);")
-        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_ltks_user_id ON ltks(share_url, profile_user_id);")")
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_error_null ON product_images (error);"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ltks_id_hero_image ON ltks(id, hero_image);"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_products_image_url ON products(id, image_url);"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_products_image_url_price ON products(id, price, image_url);"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_ltks_user_id ON ltks(share_url, profile_user_id);"
+        )
         self.connection.commit()
 
     @retry_if_busy
