@@ -1,5 +1,6 @@
 import argparse
 import io
+import time
 
 import requests
 from PIL import Image
@@ -44,7 +45,7 @@ def main():
                     continue
                 except Exception as exc:
                     if "SOCKSHTTP" in str(exc):
-                        raise
+                        time.sleep(1.0)
                     db.insert_image(args.image_type, id, blob=None, error=str(exc))
                     continue
                 db.insert_image(args.image_type, id, blob=result_image)
