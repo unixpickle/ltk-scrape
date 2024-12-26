@@ -161,6 +161,11 @@ class DB:
             );
             """
         )
+        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_error_null ON product_images (error);")
+        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_ltks_id_hero_image ON ltks(id, hero_image);")
+        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_products_image_url ON products(id, image_url);")
+        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_products_image_url_price ON products(id, price, image_url);")
+        self.connection.execute("CREATE INDEX IF NOT EXISTS idx_ltks_user_id ON ltks(share_url, profile_user_id);")")
         self.connection.commit()
 
     @retry_if_busy
@@ -374,12 +379,14 @@ class DB:
         error: Optional[str] = None,
     ):
         table = "product_images" if source == "product" else "ltk_hero_images"
-        cursor = self.connection.cursor()
-        cursor.execute(
-            f"INSERT OR REPLACE INTO {table} (id, data, error) VALUES (?, ?, ?)",
+        self.connection.execute("BEGIN IMMEDIATE")
+        self.connection.execute(
+            f"""
+            INSERT OR REPLACE INTO {table} (id, data, error) VALUES (?, ?, ?);
+            """,
             (id, blob, error),
         )
-        self.connection.commit()
+        self.connection.execute("COMMIT")
 
     @retry_if_busy
     def missing_usernames(self, limit: int) -> List[Tuple[str, str]]:
@@ -402,6 +409,6 @@ class DB:
         INSERT OR REPLACE INTO usernames (id, username, error)
         VALUES (?, ?, ?);
         """
-        cursor = self.connection.cursor()
-        cursor.execute(query, (id, username, error)).fetchall()
-        self.connection.commit()
+        self.connection.execute("BEGIN IMMEDIATE")
+        self.connection.execute(query, (id, username, error)).fetchall()
+        self.connection.execute("COMMIT")

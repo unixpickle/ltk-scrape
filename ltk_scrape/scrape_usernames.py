@@ -1,6 +1,7 @@
 import argparse
 import io
 import re
+import time
 
 import requests
 from PIL import Image
@@ -20,14 +21,17 @@ def main():
 
     with requests.Session() as sess:
         while True:
+            t1 = time.time()
             unvisited = db.missing_usernames(50)
+            t2 = time.time()
+            print(f"took {t2 - t1} seconds to find missing usernames")
             if not len(unvisited):
                 print("no more remaining usernames to fetch")
                 break
             for id, url in unvisited:
                 print(f"fetching: {id} ...")
                 try:
-                    response = requests.head(
+                    response = sess.head(
                         url, allow_redirects=False, timeout=10, proxies=proxies
                     )
 

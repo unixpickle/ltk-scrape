@@ -24,9 +24,12 @@ def main():
 
     with requests.Session() as sess:
         while True:
+            t1 = time.time()
             unvisited = db.missing_images(
                 args.image_type, 50, only_with_price=args.only_with_price
             )
+            t2 = time.time()
+            print("took", t2 - t1, "seconds to find unvisited images")
             if not len(unvisited):
                 print("no more remaining images to download")
                 break
