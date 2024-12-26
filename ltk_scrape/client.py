@@ -18,11 +18,13 @@ class LTKPost:
 
 
 class LTKClient:
-    def __init__(self):
+    def __init__(self, proxy: Optional[str] = None):
         options = Options()
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
+        if proxy is not None:
+            options.add_argument("--proxy-server=" + proxy)
 
         service = Service(shutil.which("chromedriver"))
         self.driver = webdriver.Chrome(service=service, options=options)

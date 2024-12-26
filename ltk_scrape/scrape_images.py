@@ -14,9 +14,12 @@ def main():
         "--image_type", type=str, default="product", help="'product' or 'ltk'"
     )
     parser.add_argument("--only_with_price", action="store_true")
+    parser.add_argument("--proxy", type=str, default=None)
     args = parser.parse_args()
 
     db = DB(args.db_path)
+
+    proxies = None if args.proxy is None else {"http": args.proxy, "https": args.proxy}
 
     with requests.Session() as sess:
         while True:
@@ -29,12 +32,19 @@ def main():
             for id, url in unvisited:
                 print(f"fetching: {id} ...")
                 try:
-                    result_image = sess.get(url, stream=True, timeout=5).content
+                    result_image = sess.get(
+                        url, stream=True, timeout=5, proxies=proxies
+                    ).content
                     # Make sure the image is actually valid.
                     Image.open(io.BytesIO(result_image)).load()
                 except KeyboardInterrupt:
                     raise
+                except requests.exceptions.ReadTimeout as exc:
+                    db.insert_image(args.image_type, id, blob=None, error=str(exc))
+                    continue
                 except Exception as exc:
+                    if "SOCKSHTTP" in str(exc):
+                        raise
                     db.insert_image(args.image_type, id, blob=None, error=str(exc))
                     continue
                 db.insert_image(args.image_type, id, blob=result_image)
