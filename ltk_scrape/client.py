@@ -2,6 +2,7 @@ import json
 import shutil
 from dataclasses import dataclass
 from typing import Dict, Optional
+from datetime import datetime
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -65,9 +66,9 @@ class LTKClient:
                 status=data["status"],
                 caption=data["caption"],
                 share_url=data["shareUrl"],
-                date_created=data["dateCreated"],
-                date_updated=data["dateUpdated"],
-                date_published=data["datePublished"],
+                date_created=parse_timestamp(data["dateCreated"]),
+                date_updated=parse_timestamp(data["dateUpdated"]),
+                date_published=parse_timestamp(data["datePublished"]),
                 product_ids=data.get("productIds", []),
                 fetched_at=data["fetchedAt"],
             )
@@ -116,3 +117,8 @@ def maybe_parse_float(x: str) -> Optional[float]:
         return float(x)
     except ValueError:
         return None
+
+
+def parse_timestamp(ts: str) -> int:
+    parsed_date = datetime.fromisoformat(ts)
+    return int(parsed_date.timestamp())

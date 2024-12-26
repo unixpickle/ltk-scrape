@@ -50,9 +50,9 @@ class LTK:
     status: str
     caption: str
     share_url: str
-    date_created: str
-    date_updated: str
-    date_published: str
+    date_created: int
+    date_updated: int
+    date_published: int
     product_ids: List[str]
     fetched_at: int
 
