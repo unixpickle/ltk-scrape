@@ -32,30 +32,19 @@ def main():
                 print(f"fetching: {id} ...")
                 try:
                     response = sess.head(
-                        url, allow_redirects=False, timeout=10, proxies=proxies
+                        url, allow_redirects=True, timeout=10, proxies=proxies
                     )
-
-                    redirect_location = response.headers.get("Location")
-                    if redirect_location and response.status_code in (
-                        301,
-                        302,
-                        303,
-                        307,
-                        308,
-                    ):
-                        # Regex pattern to match the username part of the URL
-                        match = re.search(
-                            r"https://www\.shopltk\.com/explore/([^/]+)/",
-                            redirect_location,
-                        )
-                        if match:
-                            username = match.group(1)
-                        else:
-                            raise ValueError(
-                                f"username not found in redirect URL: {redirect_location}"
-                            )
+                    redirect_location = response.url
+                    match = re.search(
+                        r"https://www\.shopltk\.com/explore/([^/]+)/",
+                        redirect_location,
+                    )
+                    if match:
+                        username = match.group(1)
                     else:
-                        raise ValueError(f"no redirect location found for {url}")
+                        raise ValueError(
+                            f"username not found in redirect URL: {redirect_location}"
+                        )
                 except KeyboardInterrupt:
                     raise
                 except Exception as exc:

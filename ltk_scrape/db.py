@@ -389,14 +389,14 @@ class DB:
         error: Optional[str] = None,
     ):
         table = "product_images" if source == "product" else "ltk_hero_images"
-        self.connection.execute("BEGIN IMMEDIATE")
-        self.connection.execute(
+        cursor = self.connection.cursor()
+        cursor.execute(
             f"""
             INSERT OR REPLACE INTO {table} (id, data, error) VALUES (?, ?, ?);
             """,
             (id, blob, error),
         )
-        self.connection.execute("COMMIT")
+        self.connection.commit()
 
     @retry_if_busy
     def missing_usernames(self, limit: int) -> List[Tuple[str, str]]:
@@ -419,6 +419,6 @@ class DB:
         INSERT OR REPLACE INTO usernames (id, username, error)
         VALUES (?, ?, ?);
         """
-        self.connection.execute("BEGIN IMMEDIATE")
-        self.connection.execute(query, (id, username, error)).fetchall()
-        self.connection.execute("COMMIT")
+        cursor = self.connection.cursor()
+        cursor.execute(query, (id, username, error)).fetchall()
+        self.connection.commit()
