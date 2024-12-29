@@ -165,6 +165,9 @@ class DB:
             "CREATE INDEX IF NOT EXISTS idx_error_null ON product_images (error);"
         )
         self.connection.execute(
+            "CREATE INDEX idx_ltk_hero_images_error ON ltk_hero_images (error);"
+        )
+        self.connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_ltks_id_hero_image ON ltks(id, hero_image);"
         )
         self.connection.execute(
