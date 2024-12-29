@@ -162,10 +162,10 @@ class DB:
             """
         )
         self.connection.execute(
-            "CREATE INDEX IF NOT EXISTS idx_error_null ON product_images (error);"
+            "CREATE INDEX IF NOT EXISTS idx_product_images_error_id ON product_images (error, id);"
         )
         self.connection.execute(
-            "CREATE INDEX IF NOT EXISTS idx_ltk_hero_images_error ON ltk_hero_images (error);"
+            "CREATE INDEX IF NOT EXISTS idx_ltk_hero_images_error_id ON ltk_hero_images (error, id);"
         )
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_ltks_id_hero_image ON ltks(id, hero_image);"
