@@ -26,7 +26,7 @@ def main():
         while True:
             t1 = time.time()
             unvisited = db.missing_images(
-                args.image_type, 1000, only_with_price=args.only_with_price
+                args.image_type, 10000, only_with_price=args.only_with_price
             )
             t2 = time.time()
             print("took", t2 - t1, "seconds to find unvisited images")
@@ -49,6 +49,7 @@ def main():
                 except Exception as exc:
                     if "SOCKSHTTP" in str(exc):
                         time.sleep(1.0)
+                    print("error", exc)
                     db.insert_image(args.image_type, id, blob=None, error=str(exc))
                     continue
                 db.insert_image(args.image_type, id, blob=result_image)
