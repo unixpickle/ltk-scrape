@@ -360,18 +360,25 @@ class DB:
 
     @retry_if_busy
     def missing_images(
-        self, source: ImageSource, limit: int, only_with_price: bool = False
+        self,
+        source: ImageSource,
+        limit: int,
+        only_with_price: bool = False,
+        only_with_name: bool = False,
     ) -> List[Tuple[str, str]]:
         """Get a collection of (id, url) tuples."""
 
         image_table = "product_images" if source == "product" else "ltk_hero_images"
         listing_table = "products" if source == "product" else "ltks"
         url_field = "image_url" if source == "product" else "hero_image"
-        where_clause = (
-            f"AND {listing_table}.price is not null"
-            if source == "product" and only_with_price
-            else ""
-        )
+
+        where_clauses = []
+        if source == "product":
+            if only_with_price:
+                where_clauses.append(f"AND {listing_table}.price is not null")
+            if only_with_name:
+                where_clauses.append(f"AND {listing_table}.name is not null")
+        where_clause = " AND ".join(where_clauses)
 
         query = f"""
         SELECT {listing_table}.id, {listing_table}.{url_field}

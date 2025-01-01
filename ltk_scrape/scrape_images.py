@@ -19,6 +19,7 @@ def main():
         "--image_type", type=str, default="product", help="'product' or 'ltk'"
     )
     parser.add_argument("--only_with_price", action="store_true")
+    parser.add_argument("--only_with_name", action="store_true")
     parser.add_argument("--proxy", type=str, default=None)
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--batch_size", type=int, default=10000)
@@ -38,7 +39,10 @@ def main():
         while True:
             t1 = time.time()
             unvisited = db.missing_images(
-                args.image_type, args.batch_size, only_with_price=args.only_with_price
+                args.image_type,
+                args.batch_size,
+                only_with_price=args.only_with_price,
+                only_with_name=args.only_with_name,
             )
             t2 = time.time()
             print("took", t2 - t1, "seconds to find unvisited images")
