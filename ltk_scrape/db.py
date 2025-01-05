@@ -3,7 +3,7 @@ import random
 import sqlite3
 import time
 from dataclasses import asdict, dataclass
-from typing import Callable, List, Literal, Optional, Tuple
+from typing import Callable, Dict, List, Literal, Optional, Tuple
 
 ImageSource = Literal["product", "ltk"]
 
@@ -326,6 +326,38 @@ class DB:
         return products
 
     @retry_if_busy
+    def unscraped_ltks(self, ids: List[str]) -> List[str]:
+        if not len(ids):
+            return ids
+        placeholders = ", ".join("(?)" for _ in ids)
+        query = f"""
+        WITH temp(id) AS (
+            VALUES {placeholders}
+        )
+        SELECT temp.id
+        FROM temp
+        WHERE NOT EXISTS (SELECT id FROM ltks WHERE ltks.id = temp.id)
+        """
+        result = [row[0] for row in self.connection.execute(query, ids).fetchall()]
+        return result
+
+    @retry_if_busy
+    def unscraped_products(self, ids: List[str]) -> List[str]:
+        if not len(ids):
+            return ids
+        placeholders = ", ".join("(?)" for _ in ids)
+        query = f"""
+        WITH temp(id) AS (
+            VALUES {placeholders}
+        )
+        SELECT temp.id
+        FROM temp
+        WHERE NOT EXISTS (SELECT id FROM products WHERE products.id = temp.id)
+        """
+        result = [row[0] for row in self.connection.execute(query, ids).fetchall()]
+        return result
+
+    @retry_if_busy
     def has_visited_ltk(self, id: str) -> Tuple[bool, Optional[str]]:
         cursor = self.connection.cursor()
         cursor.execute("SELECT error FROM visited_ltks WHERE id = ?", (id,))
@@ -420,6 +452,14 @@ class DB:
         """
         result = self.connection.execute(query, (limit,)).fetchall()
         return [tuple(x) for x in result]
+
+    @retry_if_busy
+    def profile_id_counts(self) -> Dict[str, int]:
+        return dict(
+            self.connection.execute(
+                "SELECT profile_id, SUM(1) FROM ltks GROUP BY profile_id;"
+            ).fetchall()
+        )
 
     @retry_if_busy
     def insert_username(
