@@ -414,8 +414,7 @@ class DB:
         where_clause = " AND ".join(where_clauses)
         sort_clause = ""
         if sort_by_recent:
-            date_field = "fetched_at" if source == "product" else "date_published"
-            sort_clause = f"ORDER BY {date_field} DESC"
+            sort_clause = f"ORDER BY {listing_table}.rowid DESC"
 
         query = f"""
         SELECT {listing_table}.id, {listing_table}.{url_field}
