@@ -397,6 +397,7 @@ class DB:
         limit: int,
         only_with_price: bool = False,
         only_with_name: bool = False,
+        sort_by_recent: bool = False,
     ) -> List[Tuple[str, str]]:
         """Get a collection of (id, url) tuples."""
 
@@ -411,12 +412,17 @@ class DB:
             if only_with_name:
                 where_clauses.append(f"AND {listing_table}.name is not null")
         where_clause = " AND ".join(where_clauses)
+        sort_clause = ""
+        if sort_by_recent:
+            date_field = "fetched_at" if source == "product" else "date_published"
+            sort_clause = f"ORDER BY {date_field} DESC"
 
         query = f"""
         SELECT {listing_table}.id, {listing_table}.{url_field}
         FROM {listing_table}
         LEFT JOIN {image_table} ON {image_table}.id = {listing_table}.id
         WHERE {image_table}.id IS NULL {where_clause}
+        {sort_clause}
         LIMIT ?;
         """
         result = self.connection.execute(query, (limit,)).fetchall()

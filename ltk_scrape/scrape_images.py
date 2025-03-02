@@ -1,10 +1,10 @@
 import argparse
 import io
-from multiprocessing import Pool, Process, Queue
+from multiprocessing import Process, Queue
 import sys
 import time
 import traceback
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import requests
 from PIL import Image
@@ -20,6 +20,7 @@ def main():
     )
     parser.add_argument("--only_with_price", action="store_true")
     parser.add_argument("--only_with_name", action="store_true")
+    parser.add_argument("--sort_by_recent", action="store_true")
     parser.add_argument("--proxy", type=str, default=None)
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--batch_size", type=int, default=10000)
@@ -43,6 +44,7 @@ def main():
                 args.batch_size,
                 only_with_price=args.only_with_price,
                 only_with_name=args.only_with_name,
+                sort_by_recent=args.sort_by_recent,
             )
             t2 = time.time()
             print("took", t2 - t1, "seconds to find unvisited images")
