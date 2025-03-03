@@ -1,3 +1,4 @@
+import random
 import argparse
 from typing import Any, Dict, List
 import requests
@@ -12,6 +13,7 @@ def main():
     parser.add_argument("--db_path", type=str, default="db.db")
     parser.add_argument("--max_per_user", type=int, default=50)
     parser.add_argument("--proxy", type=str, default=None)
+    parser.add_argument("--random_order", action="store_true")
     args = parser.parse_args()
 
     db = DB(args.db_path)
@@ -20,7 +22,12 @@ def main():
     profile_id_to_count = db.profile_id_counts()
 
     with requests.Session() as sess:
-        for profile, count in sorted(profile_id_to_count.items(), key=lambda x: x[1]):
+        if args.random_order:
+            items = list(profile_id_to_count.items())
+            random.shuffle(items)
+        else:
+            items = sorted(profile_id_to_count.items(), key=lambda x: x[1])
+        for profile, count in items:
             print(f"scraping profile {profile} which had {count} existing posts...")
             payload = {
                 "query": "",
